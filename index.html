@@ -1,0 +1,53 @@
+<script>
+        const btn = document.getElementById('emergency-btn');
+        const statusText = document.getElementById('status');
+        const WEBHOOK_URL = 'https://hook.eu1.make.com/rwk8fy7u5yisa4u9ttee65j1dgalvvkh';
+
+        btn.addEventListener('click', () => {
+            statusText.innerText = "Henter posisjon...";
+            btn.disabled = true;
+
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        sendAlert({
+                            lat: position.coords.latitude,
+                            lon: position.coords.longitude,
+                            // KORRIGERT URL HER:
+                            mapUrl: `https://www.google.com/maps?q=${position.coords.latitude},${position.coords.longitude}`
+                        });
+                    },
+                    (error) => {
+                        console.error("GPS feil:", error);
+                        sendAlert({ note: "Posisjon ikke tilgjengelig" });
+                    },
+                    { enableHighAccuracy: true, timeout: 10000 }
+                );
+            } else {
+                sendAlert({ note: "Enheten støtter ikke GPS" });
+            }
+        });
+
+        async function sendAlert(locationData) {
+            statusText.innerText = "Sender varsel...";
+            try {
+                // OPPDATERT FETCH FOR BEDRE KOMMUNIKASJON MED MAKE
+                await fetch(WEBHOOK_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        timestamp: new Date().toLocaleString("nb-NO"), // Penere tidsformat
+                        ...locationData 
+                    })
+                });
+                statusText.innerText = "VARSEL SENDT!";
+                statusText.style.color = "#4CAF50";
+                btn.style.background = "#4CAF50";
+            } catch (e) {
+                statusText.innerText = "Feil! Prøv igjen.";
+                btn.disabled = false;
+            }
+        }
+    </script>
